@@ -1,13 +1,12 @@
 /**
  * server/server.js
  * ---------------------------------------------------------
- * Main backend entry point for Collaborative Canvas Project
- * ---------------------------------------------------------
- * Responsibilities:
- * - Serve static files from /client
- * - Initialize Socket.IO for real-time connections
- * - Manage rooms and drawing events
- * - Connect to rooms.js and drawing-state.js modules
+ * Main server file for Collaborative Canvas.
+ * Handles:
+ *  - Serving client files
+ *  - WebSocket events via Socket.IO
+ *  - User join/leave management
+ *  - Delegating drawing operations to drawing-state.js
  */
 
 const express = require("express");
@@ -18,72 +17,94 @@ const path = require("path");
 const { getRoom, createRoom, removeUserFromRoom } = require("./rooms");
 const { handleDrawingEvent, getCanvasState } = require("./drawing-state");
 
-// -------------------------
-// Server Initialization
-// -------------------------
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// -------------------------
 // Serve client files
+// -------------------------
 const clientPath = path.join(__dirname, "..", "client");
 app.use(express.static(clientPath));
 
-// Default route
 app.get("/", (req, res) => {
   res.sendFile(path.join(clientPath, "index.html"));
 });
 
 // -------------------------
-// Socket.IO Real-time Layer
+// Utility: generate short random id
+// -------------------------
+function generateId() {
+  return Math.random().toString(36).substring(2, 10);
+}
+
+// -------------------------
+// WebSocket Event Handling
 // -------------------------
 io.on("connection", (socket) => {
-  console.log(`🟢 User connected: ${socket.id}`);
+  console.log(`🟢 User connected: socket ${socket.id}`);
 
-  // User joins a room
   socket.on("join_room", ({ roomId, userId, displayName }) => {
-    console.log(`👥 ${displayName || userId} joined room: ${roomId}`);
+    try {
+      if (!roomId) roomId = "default-room";
+      if (!userId) userId = generateId();
 
-    // Create room if not exists
-    const room = getRoom(roomId) || createRoom(roomId);
-    room.users[socket.id] = { userId, displayName };
+      const room = getRoom(roomId) || createRoom(roomId);
+      room.users[socket.id] = { userId, displayName };
 
-    socket.join(roomId);
+      socket.join(roomId);
+      console.log(`👥 ${displayName || userId} joined ${roomId}`);
 
-    // Send current state (snapshot + opLog tail)
-    const state = getCanvasState(roomId);
-    socket.emit("room_state", state);
+      // Send current canvas state to the new user
+      const state = getCanvasState(roomId);
+      socket.emit("room_state", state);
 
-    // Notify others
-    socket.to(roomId).emit("user_joined", { userId, displayName });
+      // Notify all other users in the room
+      socket.to(roomId).emit("user_joined", { userId, displayName });
+    } catch (err) {
+      console.error("❌ Error in join_room:", err);
+    }
   });
 
-  // Handle drawing events
+  // Drawing events (brush, eraser, etc.)
   socket.on("drawing_event", ({ roomId, event }) => {
-    handleDrawingEvent(roomId, event, io);
+    try {
+      handleDrawingEvent(roomId, event, io);
+    } catch (err) {
+      console.error("❌ Error in drawing_event:", err);
+    }
   });
 
-  // Handle cursor movement
+  // Cursor movement
   socket.on("cursor", ({ roomId, userId, x, y }) => {
+    if (!roomId || !userId) return;
     socket.to(roomId).emit("cursor_update", { userId, x, y });
   });
 
-  // Handle undo/redo
+  // Undo/Redo
   socket.on("undo", ({ roomId, userId, targetOpId }) => {
-    handleDrawingEvent(roomId, { type: "undo", userId, targetOpId }, io);
+    try {
+      handleDrawingEvent(roomId, { type: "undo", userId, targetOpId }, io);
+    } catch (err) {
+      console.error("❌ Error in undo:", err);
+    }
   });
 
   socket.on("redo", ({ roomId, userId, targetOpId }) => {
-    handleDrawingEvent(roomId, { type: "redo", userId, targetOpId }, io);
+    try {
+      handleDrawingEvent(roomId, { type: "redo", userId, targetOpId }, io);
+    } catch (err) {
+      console.error("❌ Error in redo:", err);
+    }
   });
 
-  // Handle disconnection
+  // Handle disconnect
   socket.on("disconnect", () => {
-    console.log(`🔴 User disconnected: ${socket.id}`);
     const roomId = removeUserFromRoom(socket.id);
     if (roomId) {
-      socket.to(roomId).emit("user_left", { socketId: socket.id });
+      socket.to(roomId).emit("user_left", { userId: socket.id });
     }
+    console.log(`🔴 Socket disconnected: ${socket.id}`);
   });
 });
 
@@ -92,5 +113,7 @@ io.on("connection", (socket) => {
 // -------------------------
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Collaborative Canvas server running on http://localhost:${PORT}`);
+  console.log(
+    `🚀 Collaborative Canvas server running on http://localhost:${PORT}`
+  );
 });
