@@ -1,0 +1,149 @@
+/* ---------------------------------------------------------
+   Collaborative Canvas - Stylesheet
+   ---------------------------------------------------------
+   Clean layout with responsive toolbar, canvas, and user list.
+--------------------------------------------------------- */
+
+:root {
+  --bg-color: #f7f7f7;
+  --toolbar-bg: #ffffff;
+  --accent: #0078ff;
+  --text-color: #333;
+  --border-color: #ddd;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Header & Toolbar */
+header {
+  background-color: var(--toolbar-bg);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+header h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--accent);
+}
+
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#toolbar button {
+  background-color: var(--toolbar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s, transform 0.1s;
+}
+
+#toolbar button:hover {
+  background-color: #eef4ff;
+  transform: scale(1.03);
+}
+
+#toolbar button.active {
+  background-color: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+#toolbar input[type="color"],
+#toolbar input[type="range"] {
+  cursor: pointer;
+}
+
+/* Main layout */
+main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+/* User Panel */
+#user-panel {
+  width: 200px;
+  border-right: 1px solid var(--border-color);
+  background-color: #fafafa;
+  padding: 0.5rem;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+#user-panel h3 {
+  margin-top: 0;
+  text-align: center;
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+#user-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+#user-list li {
+  padding: 0.3rem 0.4rem;
+  margin-bottom: 0.3rem;
+  border-radius: 4px;
+  background-color: #e9f3ff;
+  font-size: 0.9rem;
+  color: #222;
+}
+
+/* Canvas Area */
+#draw-area {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-color: #fff;
+  cursor: crosshair;
+}
+
+/* Footer */
+footer {
+  background-color: var(--toolbar-bg);
+  text-align: center;
+  padding: 0.4rem;
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border-color);
+  color: #555;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  main {
+    flex-direction: column;
+  }
+
+  #user-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: none;
+  }
+
+  #toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
